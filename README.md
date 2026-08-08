@@ -1,3 +1,9 @@
+## สมาชิก
+67160233 รวีโรจน์ ศรีพหรม section 1
+67160217 ธนกร แก้วศรีสด section 1
+
+---
+
 # FreezePrice Project
 
 ระบบบริหารจัดการและจองบริการ FreezePrice พร้อมระบบลงทะเบียน เข้าสู่ระบบ และ API บริหารจัดการข้อมูล พัฒนาด้วย **FastAPI (Backend)** และ **HTML/Tailwind CSS (Frontend)**
