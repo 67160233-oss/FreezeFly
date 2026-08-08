@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>บริการของเรา - FreezeFly</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap');
+        body { font-family: 'Kanit', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+
+    <!-- Navigation Bar -->
+    <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-xs">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2 decoration-none">
+                <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"></path>
+                </svg>
+                <span class="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">FreezeFly</span>
+            </a>
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+                <a href="index.html" class="text-emerald-600 font-semibold">บริการของเรา</a>
+                <a href="#" class="hover:text-emerald-600 transition">โปรโมชัน</a>
+                <a href="#" class="hover:text-emerald-600 transition">ติดต่อเรา</a>
+            </div>
+            
+            <!-- ส่วนจัดแสดงปุ่มล็อกอิน / ข้อมูลผู้ใช้ (ควบคุมด้วย JavaScript) -->
+            <div id="authArea" class="flex items-center gap-4">
+                <a href="login.html" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition">เข้าสู่ระบบ</a>
+                <a href="register.html" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-5 h-10 rounded-full flex items-center shadow-sm transition cursor-pointer shadow-emerald-200">
+                    เริ่มต้นใช้งาน
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="relative overflow-hidden bg-linear-to-b from-emerald-50/50 to-slate-50 py-20 px-6">
+        <div class="max-w-4xl mx-auto text-center">
+            <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">Smart Travel Solutions</span>
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-900 mt-4 tracking-tight leading-tight">
+                ยกระดับการเดินทางอย่างชาญฉลาด<br>จัดการทุกเที่ยวบินได้อย่าง<span class="text-emerald-600">แม่นยำและมั่นใจ</span>
+            </h1>
+            <p class="text-slate-500 mt-4 text-base md:text-lg max-w-2xl mx-auto font-light">
+                เราพัฒนาระบบการสำรองที่นั่งบัตรโดยสารเครื่องบินให้เป็นเรื่องง่าย ด้วยเทคโนโลยีอัจฉริยะที่ช่วยบริหารจัดการค่าใช้จ่ายอย่างคุ้มค่า พร้อมดูแลและคุ้มครองคุณตลอดการเดินทาง
+            </p>
+        </div>
+    </header>
+
+    <!-- Core Services Section -->
+    <main class="max-w-7xl mx-auto px-6 py-12">
+        <div class="text-center mb-16">
+            <h2 class="text-2xl font-bold text-slate-900">บริการหลักของเรา</h2>
+            <div class="h-1 w-12 bg-emerald-500 mx-auto mt-3 rounded-full"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="bg-white border border-slate-100 p-6 rounded-2xl shadow-xs hover:shadow-xl transition duration-300 group">
+                <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-5 group-hover:bg-emerald-600 group-hover:text-white transition duration-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18m9-9H3m15-6L6 18M6 6l12 12"></path></svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900 mb-2">Price Freeze</h3>
+                <p class="text-xs text-slate-500 leading-relaxed font-light">
+                    บริการล็อกราคาบัตรโดยสารที่ต้องการได้นานสูงสุด 5 วัน ด้วยอัตราค่าธรรมเนียมเริ่มต้นเพียง ฿299 ช่วยให้คุณวางแผนการเดินทางและบริหารงบประมาณได้อย่างยืดหยุ่น โดยไม่มีข้อผูกมัดเพิ่มเติม
+                </p>
+            </div>
+            <div class="bg-white border border-slate-100 p-6 rounded-2xl shadow-xs hover:shadow-xl transition duration-300 group">
+                <div class="w-12 h-12 bg-sky-50 text-sky-500 rounded-xl flex items-center justify-center mb-5 group-hover:bg-sky-500 group-hover:text-white transition duration-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900 mb-2">Smart Price Alert</h3>
+                <p class="text-xs text-slate-500 leading-relaxed font-light">
+                    ระบบติดตามและวิเคราะห์แนวโน้มราคาบัตรโดยสารอัตโนมัติด้วยเทคโนโลยี AI พร้อมส่งการแจ้งเตือนผ่านช่องทาง SMS และ LINE ทันทีเมื่อราคาปรับเปลี่ยนเข้าสู่ช่วงที่คุ้มค่าที่สุด
+                </p>
+            </div>
+            <div class="bg-white border border-slate-100 p-6 rounded-2xl shadow-xs hover:shadow-xl transition duration-300 group">
+                <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center mb-5 group-hover:bg-purple-600 group-hover:text-white transition duration-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900 mb-2">Validation & Auto-Refund</h3>
+                <p class="text-xs text-slate-500 leading-relaxed font-light">
+                    ระบบตรวจสอบความถูกต้องของข้อมูลผู้โดยสารตามมาตรฐานสากล พร้อมกลไกคืนเงินอัตโนมัติ (Auto-Refund) ภายใน 24-72 ชั่วโมง หากเกิดข้อขัดข้องทางเทคนิคในขั้นตอนการออกบัตรโดยสาร
+                </p>
+            </div>
+            <div class="bg-white border border-slate-100 p-6 rounded-2xl shadow-xs hover:shadow-xl transition duration-300 group">
+                <div class="w-12 h-12 bg-fuchsia-50 text-fuchsia-600 rounded-xl flex items-center justify-center mb-5 group-hover:bg-fuchsia-700 group-hover:text-white transition duration-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900 mb-2">Offline Pass & Live Alert</h3>
+                <p class="text-xs text-slate-500 leading-relaxed font-light">
+                    รองรับการเข้าถึงบัตรโดยสารอิเล็กทรอนิกส์ (E-Ticket) แบบออฟไลน์ พร้อมระบบ Push Notification แจ้งเตือนสถานะเที่ยวบิน การล่าช้า หรือการเปลี่ยนประตูขึ้นเครื่องแบบเรียลไทม์
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="border-t border-slate-100 bg-white py-8 text-center text-xs text-slate-400">
+        &copy; 2026 FreezeFly Technology. All rights reserved.
+    </footer>
+
+    <!-- JavaScript สำหรับการจัดการ Session และการเชื่อมต่อ Backend -->
+    <script>
+        // กำหนด URL สำหรับเชื่อมต่อ FastAPI Backend
+        const API_BASE_URL = 'http://localhost:8000';
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('access_token');
+            const isLoggedIn = localStorage.getItem('isLoggedIn');
+            const userDisplay = localStorage.getItem('userEmail') || localStorage.getItem('username');
+            const authArea = document.getElementById('authArea');
+
+            // หากมีการล็อกอินอยู่ (ตรวจสอบจาก Token หรือ Flag สถานะ)
+            if ((isLoggedIn === 'true' || token) && userDisplay) {
+                authArea.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 flex items-center gap-1.5 shadow-xs">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            👤 ${userDisplay}
+                        </span>
+                        <button id="logoutBtn" class="text-xs font-semibold text-red-500 hover:text-red-700 transition cursor-pointer px-3 py-1.5 rounded-lg hover:bg-red-50">
+                            ออกจากระบบ
+                        </button>
+                    </div>
+                `;
+
+                // การทำงานเมื่อกดปุ่ม ล็อกเอาต์
+                document.getElementById('logoutBtn').addEventListener('click', () => {
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('userEmail');
+                    localStorage.removeItem('username');
+                    window.location.reload(); // รีเฟรชเพื่อคืนค่าปุ่ม Login/Register
+                });
+            }
+        });
+    </script>
+</body>
+</html>

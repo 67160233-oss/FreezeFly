@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สมัครสมาชิก - FreezeFly</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap');
+        body { font-family: 'Kanit', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased flex flex-col min-h-screen">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-white border-b border-slate-100 shadow-xs h-16 flex items-center">
+        <div class="max-w-7xl mx-auto px-6 w-full flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2 decoration-none">
+                <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"></path>
+                </svg>
+                <span class="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">FreezeFly</span>
+            </a>
+            <a href="login.html" class="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition">เข้าสู่ระบบ</a>
+        </div>
+    </nav>
+
+    <!-- Register Form Container -->
+    <main class="flex-grow flex items-center justify-center px-6 py-12">
+        <div class="bg-white border border-slate-100 p-8 rounded-2xl shadow-xl max-w-md w-full">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl font-bold text-slate-900">สร้างบัญชีผู้ใช้งาน</h1>
+                <p class="text-xs text-slate-400 mt-1">กรอกข้อมูลส่วนบุคคลเพื่อเริ่มต้นระบบบริหารจัดการเที่ยวบิน</p>
+            </div>
+
+            <!-- ข้อความแจ้งเตือนข้อผิดพลาด -->
+            <div id="errorMessage" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl text-center"></div>
+            
+            <!-- ข้อความแจ้งเตือนเมื่อสำเร็จ -->
+            <div id="successMessage" class="hidden mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs rounded-xl text-center">
+                สมัครสมาชิกสำเร็จ! กำลังนำคุณไปยังหน้าเข้าสู่ระบบ...
+            </div>
+
+            <form class="space-y-4" id="registerForm">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">ชื่อ - นามสกุล (ภาษาอังกฤษเท่านั้นตามหน้าพาสปอร์ต)</label>
+                    <input type="text" id="username" required placeholder="e.g., SOMCHAI JAIDEE" class="w-full px-4 h-11 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 uppercase">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">อีเมลองค์กร / อีเมลส่วนบุคคล</label>
+                    <input type="email" id="email" required placeholder="name@example.com" class="w-full px-4 h-11 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">รหัสผ่าน</label>
+                    <input type="password" id="password" required placeholder="••••••••" class="w-full px-4 h-11 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">ยืนยันรหัสผ่าน</label>
+                    <input type="password" id="confirmPassword" required placeholder="••••••••" class="w-full px-4 h-11 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div class="flex items-start gap-2 pt-2">
+                    <input type="checkbox" id="terms" class="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500">
+                    <label for="terms" class="text-[11px] text-slate-400 leading-tight">ฉันยอมรับ <a href="#" class="text-emerald-600 underline">ข้อตกลงและเงื่อนไขการใช้บริการ</a> รวมถึงนโยบายความเป็นส่วนตัวของระบบสายการบิน</label>
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium h-11 rounded-xl transition mt-4 cursor-pointer text-sm shadow-sm shadow-emerald-100 disabled:opacity-50">
+                    ลงทะเบียนบัญชีใหม่
+                </button>
+            </form>
+
+            <div class="text-center mt-6 pt-4 border-t border-slate-100 text-xs text-slate-500">
+                มีบัญชีผู้ใช้งานแล้ว? <a href="login.html" class="text-emerald-600 font-medium hover:underline">เข้าสู่ระบบที่นี่</a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-100 bg-white py-6 text-center text-xs text-slate-400">
+        &copy; 2026 FreezeFly Technology. All rights reserved.
+    </footer>
+
+    <!-- JavaScript สำหรับระบบลงทะเบียนผ่าน FastAPI -->
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+
+        document.getElementById('registerForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const termsChecked = document.getElementById('terms').checked;
+
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            const submitBtn = document.getElementById('submitBtn');
+
+            // ซ่อนกล่องแจ้งเตือนเก่าก่อน
+            errorDiv.classList.add('hidden');
+            successDiv.classList.add('hidden');
+
+            // ตรวจสอบเงื่อนไขฝั่ง Client
+            if (password !== confirmPassword) {
+                errorDiv.innerText = 'รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            if (!termsChecked) {
+                errorDiv.innerText = 'กรุณายอมรับข้อตกลงและเงื่อนไขก่อนลงทะเบียน';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            // แสดงสถานะกำลังส่งข้อมูล
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'กำลังลงทะเบียน...';
+
+            try {
+                // ส่งข้อมูลไปยัง Endpoint /auth/register ของ FastAPI
+                const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        email: email,
+                        password: password
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    successDiv.classList.remove('hidden');
+                    // ย้ายไปหน้า Login หลังสมัครเสร็จ 1.5 วินาที
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 1500);
+                } else {
+                    // จัดการแสดงผล Error Response
+                    if (Array.isArray(data.detail)) {
+                        errorDiv.innerText = data.detail.map(err => err.msg).join(', ');
+                    } else {
+                        errorDiv.innerText = data.detail || 'ไม่สามารถลงทะเบียนได้ กรุณาตรวจสอบข้อมูลอีกครั้ง';
+                    }
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Register error:', error);
+                errorDiv.innerText = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
+                errorDiv.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'ลงทะเบียนบัญชีใหม่';
+            }
+        });
+    </script>
+</body>
+</html>

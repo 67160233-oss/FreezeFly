@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+    container_name: freezeprice_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  frontend:
+    build: ./frontend
+    container_name: freezeprice_frontend
+    ports:
+      - "80:80"  # สามารถเข้าหน้าเว็บผ่าน http://localhost ได้ทันที
+    depends_on:
+      - backend

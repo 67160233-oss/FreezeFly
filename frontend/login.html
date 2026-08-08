@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เข้าสู่ระบบ - FreezeFly</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap');
+        body { font-family: 'Kanit', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased flex flex-col min-h-screen">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-white border-b border-slate-100 shadow-xs h-16 flex items-center">
+        <div class="max-w-7xl mx-auto px-6 w-full flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2 decoration-none">
+                <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"></path>
+                </svg>
+                <span class="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">FreezeFly</span>
+            </a>
+            <a href="register.html" class="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition">ลงทะเบียนสมาชิก</a>
+        </div>
+    </nav>
+
+    <!-- Login Form Container -->
+    <main class="flex-grow flex items-center justify-center px-6 py-12">
+        <div class="bg-white border border-slate-100 p-8 rounded-2xl shadow-xl max-w-md w-full">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl font-bold text-slate-900">ยินดีต้อนรับกลับเข้าสู่ระบบ</h1>
+                <p class="text-xs text-slate-400 mt-1">กรอกข้อมูลบัญชีเพื่อเข้าใช้งานระบบ</p>
+            </div>
+
+            <!-- ข้อความแจ้งเตือนข้อผิดพลาด -->
+            <div id="errorMessage" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl text-center">
+                อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง
+            </div>
+
+            <form class="space-y-4" id="loginForm">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">อีเมลผู้ใช้งาน</label>
+                    <input type="email" id="email" required placeholder="name@example.com" class="w-full px-4 h-11 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-medium text-slate-600">รหัสผ่าน</label>
+                        <a href="#" class="text-[11px] text-emerald-600 hover:underline">ลืมรหัสผ่าน?</a>
+                    </div>
+                    <input type="password" id="password" required placeholder="••••••••" class="w-full px-4 h-11 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <div class="flex items-center gap-2 pt-1">
+                    <input type="checkbox" id="remember" class="rounded text-emerald-600 focus:ring-emerald-500">
+                    <label for="remember" class="text-xs text-slate-400">จดจำการเข้าใช้งานของฉันบนอุปกรณ์นี้</label>
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium h-11 rounded-xl transition mt-2 cursor-pointer text-sm shadow-sm shadow-emerald-100 disabled:opacity-50">
+                    เข้าสู่ระบบ
+                </button>
+            </form>
+
+            <div class="text-center mt-6 pt-4 border-t border-slate-100 text-xs text-slate-500">
+                ยังไม่มีบัญชีผู้ใช้งาน? <a href="register.html" class="text-emerald-600 font-medium hover:underline">สมัครสมาชิกใหม่ที่นี่</a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="border-t border-slate-100 bg-white py-6 text-center text-xs text-slate-400">
+        &copy; 2026 FreezeFly Technology. All rights reserved.
+    </footer>
+
+    <!-- JavaScript สำหรับระบบตรวจสอบข้อมูลผ่าน FastAPI -->
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+
+        document.getElementById('loginForm').addEventListener('submit', async function(event) {
+            event.preventDefault(); // ป้องกันการรีเฟรชหน้าจอ
+
+            const emailInput = document.getElementById('email').value;
+            const passwordInput = document.getElementById('password').value;
+            const errorDiv = document.getElementById('errorMessage');
+            const submitBtn = document.getElementById('submitBtn');
+
+            // รีเซ็ตการแสดงผลข้อความแจ้งเตือน
+            errorDiv.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'กำลังเข้าสู่ระบบ...';
+
+            try {
+                // ยิง API สำหรับเข้าสู่ระบบไปยัง FastAPI
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: emailInput,
+                        password: passwordInput
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // บันทึกสถานะการล็อกอินและข้อมูลที่เกี่ยวข้องลงใน localStorage
+                    localStorage.setItem('access_token', data.access_token || '');
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('userEmail', emailInput);
+
+                    if (data.username) {
+                        localStorage.setItem('username', data.username);
+                    }
+
+                    // ย้ายไปยังหน้าแรกทันที
+                    window.location.href = 'index.html';
+                } else {
+                    // แสดงข้อความแจ้งเตือนเมื่อเกิดข้อผิดพลาด
+                    errorDiv.innerText = data.detail || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง';
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorDiv.innerText = 'ไม่สามารถเชื่อมต่อกับระบบเซิร์ฟเวอร์ได้';
+                errorDiv.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'เข้าสู่ระบบ';
+            }
+        });
+    </script>
+</body>
+</html>
