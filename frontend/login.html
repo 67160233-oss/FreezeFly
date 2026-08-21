@@ -104,7 +104,8 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    // บันทึกสถานะการล็อกอินและข้อมูลที่เกี่ยวข้องลงใน localStorage
+                    // บันทึกสถานะการล็อกอินและข้อมูลที่เกี่ยวข้องลงใน localStorage (เพิ่ม user_id)
+                    localStorage.setItem('user_id', data.user_id);
                     localStorage.setItem('access_token', data.access_token || '');
                     localStorage.setItem('isLoggedIn', 'true');
                     localStorage.setItem('userEmail', emailInput);

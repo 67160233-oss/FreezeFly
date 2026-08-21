@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ติดต่อเรา - FreezeFly</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap');
+        body { font-family: 'Kanit', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-xs">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2 decoration-none">
+                <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"></path>
+                </svg>
+                <span class="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">FreezeFly</span>
+            </a>
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+                <a href="index.html" class="hover:text-emerald-600 transition">ค้นหาเที่ยวบิน</a>
+                <a href="my-trips.html" class="hover:text-emerald-600 transition">ทริปของฉัน & ตรึงราคา</a>
+                <a href="promotions.html" class="hover:text-emerald-600 transition">โปรโมชัน</a>
+                <a href="contact.html" class="text-emerald-600 font-semibold">ติดต่อเรา</a>
+            </div>
+            <div id="authArea" class="flex items-center gap-4">
+                <a href="login.html" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition">เข้าสู่ระบบ</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="bg-gradient-to-b from-emerald-50/50 to-slate-50 py-10 px-6 border-b border-slate-100 text-center">
+        <div class="max-w-3xl mx-auto">
+            <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">Help & Support</span>
+            <h1 class="text-3xl font-bold text-slate-900 mt-3">📞 ติดต่อศูนย์ช่วยเหลือ FreezeFly</h1>
+            <p class="text-slate-500 text-sm mt-2 font-light">มีข้อสงสัยเกี่ยวกับการตรึงราคาหรือการออกตั๋ว? ทีมงานพร้อมดูแลคุณตลอด 24 ชั่วโมง</p>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-6 py-12 flex-1 w-full">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="space-y-4">
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
+                    <div class="text-emerald-600 text-xl mb-2">📍</div>
+                    <h3 class="font-bold text-slate-900 text-base mb-1">สำนักงานใหญ่</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed"> FreezeFly Technology Co., Ltd.<br>อาคารจัตุรัสจามจุรี ชั้น 18 ปทุมวัน กรุงเทพฯ 10330</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
+                    <div class="text-emerald-600 text-xl mb-2">✉️</div>
+                    <h3 class="font-bold text-slate-900 text-base mb-1">อีเมลฝ่ายซัพพอร์ต</h3>
+                    <p class="text-xs text-slate-500">support@freezefly.com</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
+                    <div class="text-emerald-600 text-xl mb-2">📞</div>
+                    <h3 class="font-bold text-slate-900 text-base mb-1">เบอร์โทรศัพท์</h3>
+                    <p class="text-xs text-slate-500">02-123-4567 (24 ชม.)</p>
+                </div>
+            </div>
+
+            <div class="md:col-span-2 bg-white p-8 rounded-2xl border border-slate-100 shadow-xs">
+                <h2 class="text-xl font-bold text-slate-900 mb-6">ส่งข้อความถึงเรา</h2>
+                <form id="contactForm" onsubmit="handleContactSubmit(event)" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">ชื่อ-นามสกุล</label>
+                            <input id="contactName" type="text" required placeholder="กรอกชื่อของคุณ" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-emerald-500 transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">อีเมล</label>
+                            <input id="contactEmail" type="email" required placeholder="example@email.com" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-emerald-500 transition">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">หัวข้อการติดต่อ</label>
+                        <select id="contactSubject" class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-emerald-500 transition text-slate-600">
+                            <option>สอบถามเกี่ยวกับการตรึงราคา (Price Freeze)</option>
+                            <option>ปัญหาการชำระเงินและออกตั๋ว</option>
+                            <option>สอบถามโปรโมชันและส่วนลด</option>
+                            <option>อื่นๆ</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">ข้อความรายละเอียด</label>
+                        <textarea id="contactMessage" rows="4" required placeholder="ระบุรายละเอียดข้อสงสัยหรือคำถามของคุณที่นี่..." class="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-emerald-500 transition"></textarea>
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm py-3 rounded-xl transition cursor-pointer shadow-xs">
+                        ส่งข้อความ
+                    </button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="border-t border-slate-100 bg-white py-8 text-center text-xs text-slate-400 mt-auto">
+        &copy; 2026 FreezeFly Technology. All rights reserved.
+    </footer>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+
+        window.addEventListener('DOMContentLoaded', checkAuthStatus);
+
+        function checkAuthStatus() {
+            const token = localStorage.getItem('access_token');
+            const isLoggedIn = localStorage.getItem('isLoggedIn');
+            const userId = localStorage.getItem('user_id');
+            const userDisplay = localStorage.getItem('username') || localStorage.getItem('userEmail');
+            const authArea = document.getElementById('authArea');
+
+            if (!userId || (isLoggedIn !== 'true' && !token)) {
+                alert('กรุณาเข้าสู่ระบบก่อนใช้งานฟีเจอร์ติดต่อเรา');
+                window.location.href = 'login.html';
+                return false;
+            }
+
+            if (userDisplay) {
+                authArea.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 flex items-center gap-1.5 shadow-xs">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            👤 ${userDisplay}
+                        </span>
+                        <button id="logoutBtn" class="text-xs font-semibold text-red-500 hover:text-red-700 transition cursor-pointer px-3 py-1.5 rounded-lg hover:bg-red-50">
+                            ออกจากระบบ
+                        </button>
+                    </div>
+                `;
+                document.getElementById('logoutBtn').addEventListener('click', () => {
+                    localStorage.clear();
+                    window.location.href = 'login.html';
+                });
+            }
+            return true;
+        }
+
+        async function handleContactSubmit(e) {
+            e.preventDefault();
+            
+            const payload = {
+                name: document.getElementById('contactName').value,
+                email: document.getElementById('contactEmail').value,
+                subject: document.getElementById('contactSubject').value,
+                message: document.getElementById('contactMessage').value
+            };
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/contact`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    alert('ขอบคุณสำหรับการติดต่อ! ระบบบันทึกข้อความเรียบร้อยแล้ว');
+                    document.getElementById('contactForm').reset();
+                } else {
+                    alert('เกิดข้อผิดพลาดในการส่งข้อความ');
+                }
+            } catch (err) {
+                alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+            }
+        }
+    </script>
+</body>
+</html>

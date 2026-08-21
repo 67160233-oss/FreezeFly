@@ -1,35 +1,83 @@
 from pydantic import BaseModel, EmailStr
+from datetime import datetime
+from typing import Optional, List
 
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
-
-# Schema สำหรับรับข้อมูลสมัครสมาชิก
+# --- User Schemas ---
 class UserCreate(BaseModel):
     username: str
     email: EmailStr
     password: str
 
-# Schema สำหรับส่งข้อมูล User ออกไป (ไม่ส่ง password กลับไป)
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
 class UserResponse(BaseModel):
     id: int
     username: str
-    email: str
+    email: EmailStr
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
 
-# Schema สำหรับการสร้าง Project
-class ProjectCreate(BaseModel):
-    title: str
-    description: str | None = None
+# --- Flight Schemas ---
+class FlightBase(BaseModel):
+    airline: str
+    flight_number: str
+    origin: str
+    destination: str
+    departure_time: datetime
+    arrival_time: datetime
+    price: float
+    seats_available: int
 
-# Schema สำหรับส่งข้อมูล Project ออกไป
-class ProjectResponse(BaseModel):
+class FlightCreate(FlightBase):
+    pass
+
+class FlightResponse(FlightBase):
     id: int
-    title: str
-    description: str | None
-    owner_id: int
+
+    class Config:
+        from_attributes = True
+
+# --- PriceFreeze Schemas ---
+class PriceFreezeCreate(BaseModel):
+    flight_id: int
+    hours: int = 24  # ระยะเวลาตรึงราคา (24 หรือ 48 ชม.)
+
+class PriceFreezeResponse(BaseModel):
+    id: int
+    user_id: int
+    flight_id: int
+    frozen_price: float
+    freeze_fee: float
+    created_at: datetime
+    expires_at: datetime
+    status: str
+    flight: Optional[FlightResponse] = None
+
+    class Config:
+        from_attributes = True
+
+# --- Booking Schemas ---
+class BookingCreate(BaseModel):
+    flight_id: int
+    freeze_id: Optional[int] = None
+    passenger_name: str
+    passenger_email: EmailStr
+
+class BookingResponse(BaseModel):
+    id: int
+    user_id: int
+    flight_id: int
+    freeze_id: Optional[int] = None
+    passenger_name: str
+    passenger_email: EmailStr
+    total_price: float
+    status: str
+    created_at: datetime
+    flight: Optional[FlightResponse] = None
 
     class Config:
         from_attributes = True
