@@ -2,7 +2,7 @@
 // (ตั้งค่า API, ตรวจการล็อกอิน, แนบ Bearer token, ป้องกัน XSS, Navbar/Logout)
 // ทุกหน้าต้องโหลดไฟล์นี้ก่อนสคริปต์ของหน้าตัวเอง
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'https://freezefly-backend.onrender.com';
 
 // ---------------------------------------------------------------- session
 function isAuthPage() {
