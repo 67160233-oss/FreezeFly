@@ -1,0 +1,25 @@
+services:
+  backend:
+    build: ./backend
+    container_name: freezeprice_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app   # ฐานข้อมูลอยู่ที่ backend/data/sql_app.db (ไม่หายเมื่อลบคอนเทนเนอร์)
+    environment:
+      - PYTHONUNBUFFERED=1
+      - SECRET_KEY=${SECRET_KEY:-}
+      - ACCESS_TOKEN_EXPIRE_HOURS=${ACCESS_TOKEN_EXPIRE_HOURS:-12}
+      # ปิดไว้ (frontend ส่ง Bearer token แล้ว) อย่าเปิดเป็น true ยกเว้นตอนดีบั๊ก
+      - ALLOW_LEGACY_USER_ID=${ALLOW_LEGACY_USER_ID:-false}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080}
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: freezeprice_frontend
+    ports:
+      - "8080:80"  # เข้าหน้าเว็บที่ http://localhost:8080
+    depends_on:
+      - backend
+    restart: unless-stopped

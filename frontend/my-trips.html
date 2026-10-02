@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ทริปของฉัน & ตรึงราคา - FreezeFly</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="auth-guard.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap');
+        body { font-family: 'Kanit', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 shadow-xs">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2 decoration-none">
+                <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"></path>
+                </svg>
+                <span class="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">FreezeFly</span>
+            </a>
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+                <a href="index.html" class="hover:text-emerald-600 transition">ค้นหาเที่ยวบิน</a>
+                <a href="my-trips.html" class="text-emerald-600 font-semibold">ทริปของฉัน & ตรึงราคา</a>
+                <a href="promotions.html" class="hover:text-emerald-600 transition">โปรโมชัน</a>
+                <a href="contact.html" class="hover:text-emerald-600 transition">ติดต่อเรา</a>
+            </div>
+            
+            <div id="authArea" class="flex items-center gap-4">
+                <a href="login.html" class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition">เข้าสู่ระบบ</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="bg-gradient-to-b from-emerald-50/50 to-slate-50 py-10 px-6 border-b border-slate-100">
+        <div class="max-w-5xl mx-auto">
+            <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">My Dashboard</span>
+            <h1 class="text-3xl font-bold text-slate-900 mt-3 flex items-center gap-3">
+                🧳 ทริปของฉัน & รายการตรึงราคา
+            </h1>
+            <p class="text-slate-500 text-sm mt-2 font-light">จัดการสิทธิ์การตรึงราคา ชำระเงินส่วนที่เหลือเพื่อออกตั๋ว และตรวจสอบตั๋วเครื่องบินของคุณ</p>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-6 py-10 flex-1 w-full space-y-12">
+        <section>
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    ❄️ รายการตรึงราคาที่ใช้งานอยู่ (Price Freezes)
+                </h2>
+                <span id="freezeCount" class="text-xs bg-cyan-100 text-cyan-800 font-semibold px-3 py-1 rounded-full">0 รายการ</span>
+            </div>
+            <div id="freezeList" class="space-y-4">
+                <p class="text-slate-400 text-center py-8">กำลังโหลดข้อมูลรายการตรึงราคา...</p>
+            </div>
+        </section>
+
+        <section>
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    🎟️ ตั๋วที่ยืนยันการจองแล้ว (Confirmed Bookings)
+                </h2>
+                <span id="bookingCount" class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-3 py-1 rounded-full">0 รายการ</span>
+            </div>
+            <div id="bookingList" class="space-y-4">
+                <p class="text-slate-400 text-center py-8">กำลังโหลดข้อมูลตั๋วโดยสาร...</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="border-t border-slate-100 bg-white py-8 text-center text-xs text-slate-400 mt-auto">
+        &copy; 2026 FreezeFly Technology. All rights reserved.
+    </footer>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            if (isLoggedIn()) loadUserData();
+        });
+
+        async function loadUserData() {
+            const userId = getUserId();
+            if (!userId) return;
+            await Promise.all([loadFreezes(userId), loadBookings(userId)]);
+        }
+
+        async function loadFreezes(userId) {
+            const container = document.getElementById('freezeList');
+            try {
+                const res = await apiFetch(`/freeze/user/${encodeURIComponent(userId)}`);
+                if (res.status === 401) return;
+                if (!res.ok) throw new Error();
+                const freezes = await res.json();
+
+                document.getElementById('freezeCount').innerText = `${freezes.length} รายการ`;
+
+                if (freezes.length === 0) {
+                    container.innerHTML = `<div class="bg-white border border-slate-100 rounded-2xl p-8 text-center text-slate-400">ยังไม่มีรายการตรึงราคาในขณะนี้</div>`;
+                    return;
+                }
+
+                container.innerHTML = freezes.map(f => {
+                    let badgeStyle = 'bg-cyan-50 text-cyan-700 border-cyan-200';
+                    let statusText = 'กำลังตรึงราคา (ACTIVE)';
+
+                    if (f.status === 'CONVERTED' || f.status === 'converted') {
+                        badgeStyle = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                        statusText = 'แปลงเป็นตั๋วเรียบร้อยแล้ว';
+                    } else if (f.status === 'EXPIRED' || f.status === 'expired') {
+                        badgeStyle = 'bg-rose-50 text-rose-700 border-rose-200';
+                        statusText = 'หมดอายุแล้ว';
+                    }
+
+                    const isActive = f.status === 'ACTIVE' || f.status === 'active';
+                    const fee = Number(f.freeze_fee || 0);
+                    const remaining = Math.max(0, Number(f.frozen_price || 0) - fee);
+                    const flightLabel = f.flight
+                        ? `${escapeHtml(f.flight.origin)} ➔ ${escapeHtml(f.flight.destination)} <span class="text-xs font-mono text-slate-400">#${escapeHtml(f.flight.flight_number)}</span>`
+                        : `เที่ยวบิน ID: ${Number(f.flight_id)}`;
+
+                    return `
+                        <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:shadow-md transition">
+                            <div class="space-y-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-semibold px-2.5 py-0.5 rounded-md border ${badgeStyle}">${statusText}</span>
+                                    <span class="text-xs text-slate-400 font-mono">Freeze ID: #${Number(f.id)}</span>
+                                </div>
+                                <div class="text-lg font-bold text-slate-900">${flightLabel}</div>
+                                <div class="text-xs text-slate-500">⏱️ หมดอายุสิทธิ์: ${new Date(f.expires_at).toLocaleString('th-TH')}</div>
+                            </div>
+                            <div class="text-right w-full md:w-auto border-t md:border-t-0 pt-3 md:pt-0 flex flex-col md:items-end gap-2">
+                                <div class="text-xs text-slate-400">ราคาสิทธิ์ที่ล็อกไว้</div>
+                                <div class="text-2xl font-bold text-emerald-600">${baht(f.frozen_price)}</div>
+                                <div class="text-xs text-slate-400">ชำระค่าตรึงราคาแล้ว ${baht(fee)} · คงเหลือ ${baht(remaining)}</div>
+                                ${isActive ? `
+                                    <button onclick="payAndConvert(${Number(f.id)}, ${Number(f.frozen_price || 0)}, ${fee}, ${Number(f.flight_id)})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition shadow-xs cursor-pointer">
+                                        💳 ชำระเงินส่วนที่เหลือเพื่อออกตั๋ว
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                container.innerHTML = `<div class="bg-white border border-slate-100 rounded-2xl p-6 text-center text-slate-400">ไม่สามารถโหลดข้อมูลตรึงราคาได้</div>`;
+            }
+        }
+
+        async function loadBookings(userId) {
+            const container = document.getElementById('bookingList');
+            try {
+                const res = await apiFetch(`/bookings/user/${encodeURIComponent(userId)}`);
+                if (res.status === 401) return;
+                if (!res.ok) throw new Error();
+                const bookings = await res.json();
+
+                document.getElementById('bookingCount').innerText = `${bookings.length} รายการ`;
+
+                if (bookings.length === 0) {
+                    container.innerHTML = `<div class="bg-white border border-slate-100 rounded-2xl p-8 text-center text-slate-400">ยังไม่มีตั๋วเครื่องบินที่ยืนยันแล้ว</div>`;
+                    return;
+                }
+
+                container.innerHTML = bookings.map(b => {
+                    const flightInfo = b.flight
+                        ? `${escapeHtml(b.flight.origin)} ➔ ${escapeHtml(b.flight.destination)} (#${escapeHtml(b.flight.flight_number)})`
+                        : `เที่ยวบิน ID: ${Number(b.flight_id)}`;
+                    const feeLine = Number(b.freeze_fee_paid) > 0
+                        ? `<div class="text-xs text-slate-400">ตรึงราคาแล้ว ${baht(b.freeze_fee_paid)} · ชำระเพิ่ม ${baht(b.amount_due)}</div>`
+                        : '';
+
+                    return `
+                    <div class="bg-white p-6 rounded-2xl shadow-xs border border-emerald-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:shadow-md transition relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
+                        <div class="space-y-1.5 pl-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-md">E-Ticket Confirmed</span>
+                                <span class="text-xs font-mono text-slate-400">Booking ID: #${Number(b.id)}</span>
+                            </div>
+                            <div class="text-base font-bold text-slate-900 mt-1">👤 ผู้โดยสาร: ${escapeHtml(b.passenger_name)}</div>
+                            <div class="text-xs text-slate-500">📧 อีเมล: ${escapeHtml(b.passenger_email)} | ✈️ ${flightInfo}</div>
+                        </div>
+                        <div class="text-right w-full md:w-auto border-t md:border-t-0 pt-3 md:pt-0 flex flex-col md:items-end gap-2">
+                            <div class="text-xs text-slate-400">ราคาตั๋วสุทธิ</div>
+                            <div class="text-2xl font-bold text-emerald-600">${baht(b.total_price)}</div>
+                            ${feeLine}
+                            <button onclick="alert('แสดง E-Ticket เรียบร้อยแล้ว')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer">📄 ดู E-Ticket</button>
+                        </div>
+                    </div>
+                `;
+                }).join('');
+            } catch (err) {
+                container.innerHTML = `<div class="bg-white border border-slate-100 rounded-2xl p-6 text-center text-slate-400">ไม่สามารถโหลดข้อมูลตั๋วโดยสารได้</div>`;
+            }
+        }
+
+        async function payAndConvert(freezeId, frozenPrice, freezeFee, flightId) {
+            const remaining = Math.max(0, frozenPrice - freezeFee);
+            if (!confirm(`ยืนยันชำระเงินส่วนที่เหลือ ${baht(remaining)} เพื่อออกตั๋วเครื่องบินใช่หรือไม่?\n(ยังไม่รวมส่วนลดหากคุณมีโค้ด)`)) return;
+
+            const passengerName = prompt("กรอกชื่อ-นามสกุล ผู้โดยสารสำหรับออกตั๋ว:", localStorage.getItem('username') || '');
+            if (!passengerName) return;
+
+            const passengerEmail = prompt("กรอกอีเมลผู้โดยสาร:", localStorage.getItem('userEmail') || '');
+            if (!passengerEmail) return;
+
+            const promoCode = (prompt("กรอกโค้ดส่วนลด (หากไม่มีให้เว้นว่างไว้แล้วกด OK):") || '').trim();
+            let amountDue = remaining;
+
+            try {
+                if (promoCode) {
+                    // ส่ง flight_id ไปด้วยเพื่อให้ตรวจเงื่อนไขเฉพาะเที่ยวบินได้ (เช่น ASIAFLY300)
+                    const promoRes = await apiFetch('/promotions/validate', {
+                        method: 'POST',
+                        body: JSON.stringify({ code: promoCode, price: frozenPrice, flight_id: flightId })
+                    });
+                    if (promoRes.status === 401) return;
+
+                    if (!promoRes.ok) {
+                        alert(`❌ ${await readError(promoRes, 'โค้ดส่วนลดไม่ถูกต้อง')}`);
+                        return;
+                    }
+                    const promoData = await promoRes.json();
+                    amountDue = Math.max(0, promoData.final_price - freezeFee);
+                    alert(`🎉 ใช้โค้ดส่วนลดสำเร็จ! [${promoData.title}]\nได้รับส่วนลด: ${baht(promoData.discount_amount)}\nราคาตั๋วสุทธิ: ${baht(promoData.final_price)}\nยอดที่ต้องชำระเพิ่ม: ${baht(amountDue)}`);
+                }
+
+                const res = await apiFetch(`/freeze/convert/${freezeId}`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        passenger_name: passengerName,
+                        passenger_email: passengerEmail,
+                        promo_code: promoCode || null
+                    })
+                });
+                if (res.status === 401) return;
+
+                if (res.ok) {
+                    const booking = await res.json();
+                    alert(`ชำระเงินสำเร็จ! ระบบทำการออกตั๋ว E-Ticket เรียบร้อยแล้ว\nยอดที่ชำระเพิ่ม: ${baht(booking.amount_due)}`);
+                    loadUserData();
+                } else {
+                    alert(`❌ ${await readError(res, 'เกิดข้อผิดพลาดในการแปลงสิทธิ์ออกตั๋ว')}`);
+                    loadUserData(); // รีเฟรชสถานะ เผื่อสิทธิ์หมดอายุไปแล้ว
+                }
+            } catch (err) {
+                alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+            }
+        }
+    </script>
+</body>
+</html>
