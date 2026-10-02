@@ -187,39 +187,25 @@
                 return;
             }
 
-            const passengerName = prompt("กรอกชื่อ-นามสกุล ผู้โดยสาร:", localStorage.getItem('username') || '');
-            if (!passengerName) return;
-
-            const passengerEmail = prompt("กรอกอีเมลผู้โดยสาร:", localStorage.getItem('userEmail') || '');
-            if (!passengerEmail) return;
-
-            const promoCode = (prompt("กรอกโค้ดส่วนลด (หากไม่มีให้เว้นว่างไว้แล้วกด OK):") || '').trim();
+            const result = await openBookingModal({
+                title: 'ยืนยันการซื้อตั๋ว',
+                flightLabel: `${flight.origin} ➔ ${flight.destination} · เที่ยวบิน #${flight.flight_number}`,
+                basePrice: flight.price,
+                flightId: flightId,
+                defaultName: localStorage.getItem('username') || '',
+                defaultEmail: localStorage.getItem('userEmail') || '',
+                confirmLabel: 'ยืนยันซื้อตั๋ว'
+            });
+            if (!result) return; // ผู้ใช้กดยกเลิกหรือปิดหน้าต่าง
 
             try {
-                if (promoCode) {
-                    // ตรวจโค้ดล่วงหน้าเพื่อแสดงยอดให้ผู้ใช้เห็นก่อนยืนยัน
-                    const promoRes = await apiFetch('/promotions/validate', {
-                        method: 'POST',
-                        body: JSON.stringify({ code: promoCode, price: flight.price, flight_id: flightId })
-                    });
-                    if (promoRes.status === 401) return;
-
-                    if (!promoRes.ok) {
-                        alert(`❌ ${await readError(promoRes, 'โค้ดส่วนลดไม่ถูกต้อง')}`);
-                        return;
-                    }
-                    const promoData = await promoRes.json();
-                    alert(`🎉 ใช้โค้ดส่วนลดสำเร็จ! [${promoData.title}]\nได้รับส่วนลด: ${baht(promoData.discount_amount)}\nยอดชำระสุทธิ: ${baht(promoData.final_price)}`);
-                }
-
-                // ต้องส่ง promo_code ไปด้วย ไม่อย่างนั้นเซิร์ฟเวอร์จะคิดราคาเต็ม
                 const res = await apiFetch('/bookings/create', {
                     method: 'POST',
                     body: JSON.stringify({
                         flight_id: flightId,
-                        passenger_name: passengerName,
-                        passenger_email: passengerEmail,
-                        promo_code: promoCode || null
+                        passenger_name: result.passengerName,
+                        passenger_email: result.passengerEmail,
+                        promo_code: result.promoCode
                     })
                 });
                 if (res.status === 401) return;

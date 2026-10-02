@@ -75,6 +75,9 @@
     </footer>
 
     <script>
+        // เก็บรายการตรึงราคาที่โหลดมา ใช้ตอนเปิดโมดัลชำระเงินโดยไม่ต้องเรียก API ซ้ำ
+        const freezeCache = new Map();
+
         window.addEventListener('DOMContentLoaded', () => {
             if (isLoggedIn()) loadUserData();
         });
@@ -94,6 +97,9 @@
                 const freezes = await res.json();
 
                 document.getElementById('freezeCount').innerText = `${freezes.length} รายการ`;
+
+                freezeCache.clear();
+                freezes.forEach(f => freezeCache.set(f.id, f));
 
                 if (freezes.length === 0) {
                     container.innerHTML = `<div class="bg-white border border-slate-100 rounded-2xl p-8 text-center text-slate-400">ยังไม่มีรายการตรึงราคาในขณะนี้</div>`;
@@ -134,7 +140,7 @@
                                 <div class="text-2xl font-bold text-emerald-600">${baht(f.frozen_price)}</div>
                                 <div class="text-xs text-slate-400">ชำระค่าตรึงราคาแล้ว ${baht(fee)} · คงเหลือ ${baht(remaining)}</div>
                                 ${isActive ? `
-                                    <button onclick="payAndConvert(${Number(f.id)}, ${Number(f.frozen_price || 0)}, ${fee}, ${Number(f.flight_id)})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition shadow-xs cursor-pointer">
+                                    <button onclick="payAndConvert(${Number(f.id)})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition shadow-xs cursor-pointer">
                                         💳 ชำระเงินส่วนที่เหลือเพื่อออกตั๋ว
                                     </button>
                                 ` : ''}
@@ -195,43 +201,36 @@
             }
         }
 
-        async function payAndConvert(freezeId, frozenPrice, freezeFee, flightId) {
-            const remaining = Math.max(0, frozenPrice - freezeFee);
-            if (!confirm(`ยืนยันชำระเงินส่วนที่เหลือ ${baht(remaining)} เพื่อออกตั๋วเครื่องบินใช่หรือไม่?\n(ยังไม่รวมส่วนลดหากคุณมีโค้ด)`)) return;
+        async function payAndConvert(freezeId) {
+            const freeze = freezeCache.get(freezeId);
+            if (!freeze) {
+                alert('ไม่พบข้อมูลรายการตรึงราคา กรุณารีเฟรชหน้านี้อีกครั้ง');
+                return;
+            }
 
-            const passengerName = prompt("กรอกชื่อ-นามสกุล ผู้โดยสารสำหรับออกตั๋ว:", localStorage.getItem('username') || '');
-            if (!passengerName) return;
+            const flightLabel = freeze.flight
+                ? `${freeze.flight.origin} ➔ ${freeze.flight.destination} · เที่ยวบิน #${freeze.flight.flight_number}`
+                : `สิทธิ์ตรึงราคา #${freezeId}`;
 
-            const passengerEmail = prompt("กรอกอีเมลผู้โดยสาร:", localStorage.getItem('userEmail') || '');
-            if (!passengerEmail) return;
-
-            const promoCode = (prompt("กรอกโค้ดส่วนลด (หากไม่มีให้เว้นว่างไว้แล้วกด OK):") || '').trim();
-            let amountDue = remaining;
+            const result = await openBookingModal({
+                title: 'ชำระเงินและออกตั๋ว',
+                flightLabel,
+                basePrice: freeze.frozen_price,
+                feePaid: freeze.freeze_fee,
+                flightId: freeze.flight_id,
+                defaultName: localStorage.getItem('username') || '',
+                defaultEmail: localStorage.getItem('userEmail') || '',
+                confirmLabel: 'ยืนยันชำระเงิน'
+            });
+            if (!result) return;
 
             try {
-                if (promoCode) {
-                    // ส่ง flight_id ไปด้วยเพื่อให้ตรวจเงื่อนไขเฉพาะเที่ยวบินได้ (เช่น ASIAFLY300)
-                    const promoRes = await apiFetch('/promotions/validate', {
-                        method: 'POST',
-                        body: JSON.stringify({ code: promoCode, price: frozenPrice, flight_id: flightId })
-                    });
-                    if (promoRes.status === 401) return;
-
-                    if (!promoRes.ok) {
-                        alert(`❌ ${await readError(promoRes, 'โค้ดส่วนลดไม่ถูกต้อง')}`);
-                        return;
-                    }
-                    const promoData = await promoRes.json();
-                    amountDue = Math.max(0, promoData.final_price - freezeFee);
-                    alert(`🎉 ใช้โค้ดส่วนลดสำเร็จ! [${promoData.title}]\nได้รับส่วนลด: ${baht(promoData.discount_amount)}\nราคาตั๋วสุทธิ: ${baht(promoData.final_price)}\nยอดที่ต้องชำระเพิ่ม: ${baht(amountDue)}`);
-                }
-
                 const res = await apiFetch(`/freeze/convert/${freezeId}`, {
                     method: 'POST',
                     body: JSON.stringify({
-                        passenger_name: passengerName,
-                        passenger_email: passengerEmail,
-                        promo_code: promoCode || null
+                        passenger_name: result.passengerName,
+                        passenger_email: result.passengerEmail,
+                        promo_code: result.promoCode
                     })
                 });
                 if (res.status === 401) return;
