@@ -75,8 +75,9 @@
     </footer>
 
     <script>
-        // เก็บรายการตรึงราคาที่โหลดมา ใช้ตอนเปิดโมดัลชำระเงินโดยไม่ต้องเรียก API ซ้ำ
+        // เก็บรายการตรึงราคาและตั๋วที่โหลดมา ใช้ตอนเปิดโมดัล/E-Ticket โดยไม่ต้องเรียก API ซ้ำ
         const freezeCache = new Map();
+        const bookingCache = new Map();
 
         window.addEventListener('DOMContentLoaded', () => {
             if (isLoggedIn()) loadUserData();
@@ -163,6 +164,9 @@
 
                 document.getElementById('bookingCount').innerText = `${bookings.length} รายการ`;
 
+                bookingCache.clear();
+                bookings.forEach(b => bookingCache.set(b.id, b));
+
                 if (bookings.length === 0) {
                     container.innerHTML = `<div class="bg-white border border-slate-100 rounded-2xl p-8 text-center text-slate-400">ยังไม่มีตั๋วเครื่องบินที่ยืนยันแล้ว</div>`;
                     return;
@@ -191,7 +195,7 @@
                             <div class="text-xs text-slate-400">ราคาตั๋วสุทธิ</div>
                             <div class="text-2xl font-bold text-emerald-600">${baht(b.total_price)}</div>
                             ${feeLine}
-                            <button onclick="alert('แสดง E-Ticket เรียบร้อยแล้ว')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer">📄 ดู E-Ticket</button>
+                            <button onclick="showETicket(${Number(b.id)})" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 rounded-xl transition cursor-pointer">📄 ดู E-Ticket</button>
                         </div>
                     </div>
                 `;
@@ -204,7 +208,7 @@
         async function payAndConvert(freezeId) {
             const freeze = freezeCache.get(freezeId);
             if (!freeze) {
-                alert('ไม่พบข้อมูลรายการตรึงราคา กรุณารีเฟรชหน้านี้อีกครั้ง');
+                await openMessageModal({ title: 'ไม่พบข้อมูล', message: 'ไม่พบข้อมูลรายการตรึงราคา กรุณารีเฟรชหน้านี้อีกครั้ง', tone: 'error' });
                 return;
             }
 
@@ -237,15 +241,148 @@
 
                 if (res.ok) {
                     const booking = await res.json();
-                    alert(`ชำระเงินสำเร็จ! ระบบทำการออกตั๋ว E-Ticket เรียบร้อยแล้ว\nยอดที่ชำระเพิ่ม: ${baht(booking.amount_due)}`);
+                    await openMessageModal({
+                        title: 'ชำระเงินสำเร็จ',
+                        message: `ระบบทำการออกตั๋ว E-Ticket เรียบร้อยแล้ว\nยอดที่ชำระเพิ่ม: ${baht(booking.amount_due)}`,
+                        tone: 'success'
+                    });
                     loadUserData();
                 } else {
-                    alert(`❌ ${await readError(res, 'เกิดข้อผิดพลาดในการแปลงสิทธิ์ออกตั๋ว')}`);
+                    await openMessageModal({
+                        title: 'เกิดข้อผิดพลาด',
+                        message: await readError(res, 'เกิดข้อผิดพลาดในการแปลงสิทธิ์ออกตั๋ว'),
+                        tone: 'error'
+                    });
                     loadUserData(); // รีเฟรชสถานะ เผื่อสิทธิ์หมดอายุไปแล้ว
                 }
             } catch (err) {
-                alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+                await openMessageModal({ title: 'เชื่อมต่อไม่ได้', message: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', tone: 'error' });
             }
+        }
+
+        // -------------------------------------------------------------- E-Ticket
+        // แสดงตั๋วจริงแบบ boarding-pass พร้อมปุ่มพิมพ์/บันทึกเป็น PDF
+        function showETicket(bookingId) {
+            const b = bookingCache.get(bookingId);
+            if (!b) {
+                openMessageModal({ title: 'ไม่พบข้อมูลตั๋ว', message: 'กรุณารีเฟรชหน้านี้อีกครั้ง', tone: 'error' });
+                return;
+            }
+
+            const flight = b.flight;
+            const dep = flight ? new Date(flight.departure_time) : null;
+            const arr = flight ? new Date(flight.arrival_time) : null;
+            const fmtDate = (d) => d ? d.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+            const fmtTime = (d) => d ? d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '-';
+
+            ensurePrintStyle();
+
+            const overlay = document.createElement('div');
+            overlay.id = 'eticketOverlay';
+            overlay.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4 py-8 overflow-y-auto';
+            overlay.innerHTML = `
+              <div class="eticket-print-area w-full max-w-lg">
+                <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                    <div class="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-5 text-white flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"></path></svg>
+                            <span class="font-bold tracking-tight">FreezeFly</span>
+                        </div>
+                        <span class="text-xs bg-white/20 px-2.5 py-1 rounded-full font-semibold">E-TICKET</span>
+                    </div>
+
+                    <div class="flex">
+                        <div class="flex-1 p-6 space-y-5 min-w-0">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="text-xs text-slate-400">${flight ? escapeHtml(flight.airline) : ''}</div>
+                                    <div class="text-lg font-bold text-slate-900 font-mono">#${flight ? escapeHtml(flight.flight_number) : '-'}</div>
+                                </div>
+                                <span class="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-1 rounded-md border border-emerald-100 shrink-0">ยืนยันแล้ว</span>
+                            </div>
+
+                            <div class="flex items-center justify-between gap-2">
+                                <div>
+                                    <div class="text-2xl font-bold text-slate-900">${flight ? escapeHtml(flight.origin) : '-'}</div>
+                                    <div class="text-xs text-slate-400 mt-1">${fmtDate(dep)}<br>${fmtTime(dep)}</div>
+                                </div>
+                                <div class="flex-1 flex flex-col items-center px-2 min-w-[40px]">
+                                    <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"></path></svg>
+                                    <div class="w-full border-t border-dashed border-slate-300 mt-1"></div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-2xl font-bold text-slate-900">${flight ? escapeHtml(flight.destination) : '-'}</div>
+                                    <div class="text-xs text-slate-400 mt-1">${fmtDate(arr)}<br>${fmtTime(arr)}</div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 pt-3 border-t border-slate-100 text-sm">
+                                <div>
+                                    <div class="text-xs text-slate-400">ผู้โดยสาร</div>
+                                    <div class="font-semibold text-slate-900">${escapeHtml(b.passenger_name)}</div>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-xs text-slate-400">อีเมล</div>
+                                    <div class="font-semibold text-slate-900 truncate">${escapeHtml(b.passenger_email)}</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-slate-400">เลขที่การจอง</div>
+                                    <div class="font-mono font-semibold text-slate-900">#${Number(b.id)}</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-slate-400">วันที่ออกตั๋ว</div>
+                                    <div class="font-semibold text-slate-900">${fmtDate(new Date(b.created_at))}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="w-28 shrink-0 border-l border-dashed border-slate-300 relative bg-slate-50 flex flex-col items-center justify-center p-3 text-center">
+                            <div class="absolute -top-3 -left-3 w-6 h-6 rounded-full bg-slate-900/60"></div>
+                            <div class="absolute -bottom-3 -left-3 w-6 h-6 rounded-full bg-slate-900/60"></div>
+                            <div class="text-xs text-slate-400">ราคาตั๋วสุทธิ</div>
+                            <div class="text-lg font-bold text-emerald-600 mt-1">${baht(b.total_price)}</div>
+                            ${Number(b.freeze_fee_paid) > 0 ? `<div class="text-[10px] text-slate-400 mt-2 leading-snug">ชำระเพิ่ม<br>${baht(b.amount_due)}</div>` : ''}
+                            <div class="mt-4 flex gap-0.5" aria-hidden="true">
+                                ${Array.from({ length: 10 }).map(() => '<span class="w-0.5 h-8 bg-slate-800"></span>').join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="eticket-no-print flex gap-3 mt-4">
+                    <button id="etClose" type="button" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold py-2.5 rounded-xl transition cursor-pointer">ปิด</button>
+                    <button id="etPrint" type="button" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold py-2.5 rounded-xl transition cursor-pointer">🖨️ พิมพ์ / บันทึก PDF</button>
+                </div>
+              </div>
+            `;
+            document.body.appendChild(overlay);
+            document.body.style.overflow = 'hidden';
+
+            function close() {
+                document.removeEventListener('keydown', onKeydown);
+                document.body.style.overflow = '';
+                overlay.remove();
+            }
+            function onKeydown(e) { if (e.key === 'Escape') close(); }
+            document.addEventListener('keydown', onKeydown);
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+            overlay.querySelector('#etClose').addEventListener('click', close);
+            overlay.querySelector('#etPrint').addEventListener('click', () => window.print());
+        }
+
+        // แทรก CSS สำหรับโหมดพิมพ์ครั้งเดียว: ซ่อนทุกอย่างยกเว้นตัวตั๋วตอนกด "พิมพ์"
+        function ensurePrintStyle() {
+            if (document.getElementById('eticketPrintStyle')) return;
+            const style = document.createElement('style');
+            style.id = 'eticketPrintStyle';
+            style.textContent = `
+                @media print {
+                    body > *:not(#eticketOverlay) { display: none !important; }
+                    #eticketOverlay { position: static !important; background: none !important; backdrop-filter: none !important; padding: 0 !important; overflow: visible !important; }
+                    .eticket-no-print { display: none !important; }
+                }
+            `;
+            document.head.appendChild(style);
         }
     </script>
 </body>

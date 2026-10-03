@@ -260,6 +260,81 @@ function openBookingModal({
     });
 }
 
+// ---------------------------------------------------- confirm / message modal
+// แทนที่ confirm() ของเบราว์เซอร์ คืนค่า Promise<boolean>
+function openConfirmModal({ title, message, confirmLabel = 'ยืนยัน', cancelLabel = 'ยกเลิก', tone = 'default' }) {
+    return new Promise((resolve) => {
+        let settled = false;
+        const confirmBtnClass = tone === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700';
+
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4';
+        overlay.innerHTML = `
+            <div class="bg-white w-full max-w-sm rounded-2xl border border-slate-100 shadow-xl p-6" role="dialog" aria-modal="true" aria-labelledby="cmTitle">
+                <h2 id="cmTitle" class="text-lg font-bold text-slate-900">${escapeHtml(title)}</h2>
+                <p class="text-sm text-slate-500 mt-2 leading-relaxed whitespace-pre-line">${escapeHtml(message)}</p>
+                <div class="flex gap-3 mt-6">
+                    <button id="cmCancel" type="button" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold py-2.5 rounded-xl transition cursor-pointer">${escapeHtml(cancelLabel)}</button>
+                    <button id="cmConfirm" type="button" class="flex-1 ${confirmBtnClass} text-white text-sm font-semibold py-2.5 rounded-xl transition cursor-pointer">${escapeHtml(confirmLabel)}</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+
+        function close(result) {
+            if (settled) return;
+            settled = true;
+            document.removeEventListener('keydown', onKeydown);
+            document.body.style.overflow = '';
+            overlay.remove();
+            resolve(result);
+        }
+        function onKeydown(e) { if (e.key === 'Escape') close(false); }
+        document.addEventListener('keydown', onKeydown);
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
+        overlay.querySelector('#cmCancel').addEventListener('click', () => close(false));
+        overlay.querySelector('#cmConfirm').addEventListener('click', () => close(true));
+        overlay.querySelector('#cmConfirm').focus();
+    });
+}
+
+// แทนที่ alert() ของเบราว์เซอร์ คืนค่า Promise<void> ที่ resolve เมื่อผู้ใช้กด "ตกลง"
+function openMessageModal({ title, message, tone = 'success' }) {
+    return new Promise((resolve) => {
+        let settled = false;
+        const icon = tone === 'error' ? '❌' : tone === 'info' ? 'ℹ️' : '✅';
+        const titleColor = tone === 'error' ? 'text-red-600' : 'text-emerald-600';
+
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4';
+        overlay.innerHTML = `
+            <div class="bg-white w-full max-w-sm rounded-2xl border border-slate-100 shadow-xl p-6 text-center" role="dialog" aria-modal="true" aria-labelledby="mmTitle">
+                <div class="text-3xl mb-2">${icon}</div>
+                <h2 id="mmTitle" class="text-lg font-bold ${titleColor}">${escapeHtml(title)}</h2>
+                <p class="text-sm text-slate-500 mt-2 leading-relaxed whitespace-pre-line">${escapeHtml(message)}</p>
+                <button id="mmOk" type="button" class="mt-6 w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold py-2.5 rounded-xl transition cursor-pointer">ตกลง</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+
+        function close() {
+            if (settled) return;
+            settled = true;
+            document.removeEventListener('keydown', onKeydown);
+            document.body.style.overflow = '';
+            overlay.remove();
+            resolve();
+        }
+        function onKeydown(e) { if (e.key === 'Escape' || e.key === 'Enter') close(); }
+        document.addEventListener('keydown', onKeydown);
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+        overlay.querySelector('#mmOk').addEventListener('click', close);
+        overlay.querySelector('#mmOk').focus();
+    });
+}
+
 // ---------------------------------------------------------------- navbar
 // แสดงชื่อผู้ใช้ + ปุ่ม Logout
 function setupNavbarAuth() {

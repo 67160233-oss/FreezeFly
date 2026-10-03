@@ -159,8 +159,13 @@
         }
 
         async function freezePrice(flightId, price) {
-            const fee = (price * 0.05).toFixed(0);
-            if (!confirm(`คุณต้องการชำระค่าธรรมเนียม ฿${fee} เพื่อตรึงราคานี้ไว้ 24 ชั่วโมง ใช่หรือไม่?`)) return;
+            const fee = price * 0.05;
+            const confirmed = await openConfirmModal({
+                title: 'ยืนยันการตรึงราคา',
+                message: `ชำระค่าธรรมเนียม ${baht(fee)} เพื่อตรึงราคานี้ไว้ 24 ชั่วโมง ใช่หรือไม่?`,
+                confirmLabel: 'ยืนยันตรึงราคา'
+            });
+            if (!confirmed) return;
 
             try {
                 const res = await apiFetch('/freeze/create', {
@@ -170,20 +175,28 @@
                 if (res.status === 401) return;
 
                 if (res.ok) {
-                    alert('ตรึงราคาสำเร็จ! สามารถตรวจสอบรายการและชำระเงินส่วนที่เหลือได้ที่หน้า "ทริปของฉัน"');
+                    await openMessageModal({
+                        title: 'ตรึงราคาสำเร็จ',
+                        message: 'สามารถตรวจสอบรายการและชำระเงินส่วนที่เหลือได้ที่หน้า "ทริปของฉัน"',
+                        tone: 'success'
+                    });
                     window.location.href = 'my-trips.html';
                 } else {
-                    alert(`❌ ${await readError(res, 'เกิดข้อผิดพลาดในการตรึงราคา')}`);
+                    await openMessageModal({
+                        title: 'เกิดข้อผิดพลาด',
+                        message: await readError(res, 'เกิดข้อผิดพลาดในการตรึงราคา'),
+                        tone: 'error'
+                    });
                 }
             } catch (err) {
-                alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+                await openMessageModal({ title: 'เชื่อมต่อไม่ได้', message: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', tone: 'error' });
             }
         }
 
         async function bookDirect(flightId) {
             const flight = flightCache.get(flightId);
             if (!flight) {
-                alert('ไม่พบข้อมูลเที่ยวบิน กรุณาค้นหาใหม่อีกครั้ง');
+                await openMessageModal({ title: 'ไม่พบข้อมูลเที่ยวบิน', message: 'กรุณาค้นหาใหม่อีกครั้ง', tone: 'error' });
                 return;
             }
 
@@ -212,13 +225,21 @@
 
                 if (res.ok) {
                     const booking = await res.json();
-                    alert(`การออกตั๋วสำเร็จเรียบร้อย!\nราคาตั๋วสุทธิ: ${baht(booking.total_price)}`);
+                    await openMessageModal({
+                        title: 'ออกตั๋วสำเร็จ',
+                        message: `ราคาตั๋วสุทธิ: ${baht(booking.total_price)}`,
+                        tone: 'success'
+                    });
                     window.location.href = 'my-trips.html';
                 } else {
-                    alert(`❌ ${await readError(res, 'เกิดข้อผิดพลาดในการจองตั๋ว')}`);
+                    await openMessageModal({
+                        title: 'เกิดข้อผิดพลาด',
+                        message: await readError(res, 'เกิดข้อผิดพลาดในการจองตั๋ว'),
+                        tone: 'error'
+                    });
                 }
             } catch (err) {
-                alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+                await openMessageModal({ title: 'เชื่อมต่อไม่ได้', message: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', tone: 'error' });
             }
         }
     </script>
