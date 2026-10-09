@@ -2,7 +2,11 @@
 // (ตั้งค่า API, ตรวจการล็อกอิน, แนบ Bearer token, ป้องกัน XSS, Navbar/Logout)
 // ทุกหน้าต้องโหลดไฟล์นี้ก่อนสคริปต์ของหน้าตัวเอง
 
-const API_BASE_URL = 'https://freezefly-backend.onrender.com';
+// เลือก backend อัตโนมัติ ไม่ต้องคอยแก้ URL เวลาสลับระหว่างเครื่องตัวเองกับ Render
+// - เปิดจากเครื่องตัวเอง (localhost / 127.0.0.1 / ดับเบิลคลิกไฟล์) → ใช้ backend ในเครื่อง พอร์ต 8000
+// - เปิดจากเว็บจริงบน Render → ใช้ backend บน Render
+const IS_LOCAL = ['localhost', '127.0.0.1', ''].includes(window.location.hostname);
+const API_BASE_URL = IS_LOCAL ? 'http://localhost:8000' : 'https://freezefly-backend.onrender.com';
 
 // ---------------------------------------------------------------- session
 function isAuthPage() {
@@ -95,6 +99,8 @@ function openBookingModal({
     flightLabel,
     basePrice,
     feePaid = 0,
+    feeLabel = 'หักค่าธรรมเนียมที่จ่ายไว้',
+    breakdown = [],   // [{label, value, tone}] แสดงที่มาของราคาตั๋ว เช่น ราคาตลาด / ส่วนต่างที่เราจ่ายให้
     flightId,
     defaultName = '',
     defaultEmail = '',
@@ -116,8 +122,12 @@ function openBookingModal({
                         <span>ราคาตั๋ว</span>
                         <span>${baht(basePrice)}</span>
                     </div>
+                    ${breakdown.map(b => `<div class="flex justify-between text-xs ${b.tone === 'good' ? 'text-emerald-700' : b.tone === 'warn' ? 'text-amber-700' : 'text-slate-400'}">
+                        <span>${escapeHtml(b.label)}</span><span>${escapeHtml(b.value)}</span></div>`).join('')}
+                    <div class="hidden">
+                    </div>
                     <div class="flex justify-between text-slate-600 ${feePaid > 0 ? '' : 'hidden'}">
-                        <span>ชำระค่าธรรมเนียมแล้ว</span>
+                        <span>${escapeHtml(feeLabel)}</span>
                         <span>-${baht(feePaid)}</span>
                     </div>
                     <div id="bmDiscountRow" class="flex justify-between text-emerald-700 hidden">
@@ -257,6 +267,107 @@ function openBookingModal({
         }));
 
         nameInput.focus();
+    });
+}
+
+// ------------------------------------------------------ AI price advice
+function adviceStyle(level) {
+    return {
+        rising: 'bg-amber-50 text-amber-800 border border-amber-200',
+        uncertain: 'bg-sky-50 text-sky-800 border border-sky-200',
+        stable: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+        buy_now: 'bg-slate-100 text-slate-700 border border-slate-200',
+    }[level] || 'bg-slate-100 text-slate-700 border border-slate-200';
+}
+
+// ------------------------------------------------------ freeze duration modal
+function fmtDateTime(value) {
+    return new Date(value).toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+// ให้ลูกค้าเลือกระยะตรึงราคา (ตัวเลือกและกฎมาจาก backend: flight.freeze_options)
+// คืนค่า Promise: ได้จำนวนชั่วโมงที่เลือก หรือ null ถ้ายกเลิก
+function openFreezeModal(flight) {
+    return new Promise((resolve) => {
+        let settled = false;
+        const options = flight.freeze_options || [];
+        let selected = (options.find(o => o.available) || {}).hours ?? null;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4 py-8 overflow-y-auto';
+        overlay.innerHTML = `
+            <div class="bg-white w-full max-w-md rounded-2xl border border-slate-100 shadow-xl p-6 my-auto" role="dialog" aria-modal="true" aria-labelledby="fmTitle">
+                <h2 id="fmTitle" class="text-lg font-bold text-slate-900">เลือกระยะเวลาตรึงราคา</h2>
+                <p class="text-xs text-slate-500 mt-1">${escapeHtml(flight.origin)} ➔ ${escapeHtml(flight.destination)} · เที่ยวบิน #${escapeHtml(flight.flight_number)} · ราคาที่จะล็อก ${baht(flight.price)} (ราคาวันนี้)</p>
+                ${flight.price_advice ? `<p class="text-xs mt-2 px-3 py-2 rounded-lg ${adviceStyle(flight.price_advice.level)}">🤖 ${escapeHtml(flight.price_advice.message)}</p>` : ''}
+                <div id="fmOptions" class="mt-4 space-y-2" role="radiogroup"></div>
+                <div class="mt-4 bg-slate-50 rounded-xl border border-slate-200 p-3 text-xs text-slate-600 leading-relaxed space-y-1">
+                    <p>✈️ เครื่องออก ${fmtDateTime(flight.departure_time)} · ปิดขายตั๋ว ${fmtDateTime(flight.booking_closes_at)}</p>
+                    <p>🤖 ค่าธรรมเนียมคิดตามความเสี่ยงที่ AI ประเมิน: เส้นทางที่ราคานิ่งจ่ายถูก ตรึงนานหรือใกล้วันบินจ่ายแพงขึ้น</p>
+                    <p>🛡️ ราคาขึ้น เราจ่ายส่วนต่างให้สูงสุด <b class="text-slate-800">${baht((options[0] || {}).coverage_cap_amount || 0)}</b> (20% ของราคาที่ล็อก) · ราคาลง คุณได้ราคาใหม่ที่ถูกกว่า</p>
+                    <p>💳 ค่าธรรมเนียมใช้จ่ายส่วนต่างก่อน ส่วนที่เหลือ<b class="text-slate-800">หักเป็นค่าตั๋ว</b> คุณจึงไม่จ่ายแพงกว่าราคาตลาด</p>
+                    <p>⏱️ ถ้าไม่ออกตั๋วภายในเวลาที่เลือก สิทธิ์หมดอายุและไม่คืนค่าธรรมเนียม (ยกเว้นที่นั่งเต็ม หรือราคาขึ้นเกินเพดาน)</p>
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button id="fmCancel" type="button" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold py-2.5 rounded-xl transition cursor-pointer">ยกเลิก</button>
+                    <button id="fmConfirm" type="button" class="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-semibold py-2.5 rounded-xl transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"></button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+
+        const listEl = overlay.querySelector('#fmOptions');
+        const confirmBtn = overlay.querySelector('#fmConfirm');
+
+        function renderOptions() {
+            listEl.innerHTML = options.map(o => {
+                const isSel = o.hours === selected;
+                const base = 'w-full text-left rounded-xl border px-4 py-3 transition flex items-center justify-between gap-3';
+                const cls = !o.available ? 'border-slate-200 bg-slate-50 opacity-60 cursor-not-allowed'
+                    : isSel ? 'border-cyan-500 bg-cyan-50 ring-2 ring-cyan-200 cursor-pointer'
+                    : 'border-slate-200 hover:border-cyan-300 cursor-pointer';
+                const sub = o.available
+                    ? `สิทธิ์อยู่ถึง ${fmtDateTime(o.expires_at)}`
+                    : escapeHtml(o.reason || 'เลือกไม่ได้');
+                return `
+                    <button type="button" role="radio" aria-checked="${isSel}" data-hours="${Number(o.hours)}" ${o.available ? '' : 'disabled'} class="${base} ${cls}">
+                        <span>
+                            <span class="block text-sm font-semibold text-slate-900">${escapeHtml(o.label)}</span>
+                            <span class="block text-xs ${o.available ? 'text-slate-500' : 'text-red-500'} mt-0.5">${sub}</span>
+                            ${o.available && o.rise_probability != null ? `<span class="block text-[11px] text-slate-400 mt-0.5">🤖 โอกาสราคาขึ้นในช่วงนี้ ${Math.round(o.rise_probability * 100)}%</span>` : ''}
+                        </span>
+                        <span class="text-right shrink-0">
+                            <span class="block text-sm font-bold text-cyan-700">${baht(o.fee_amount)}</span>
+                            <span class="block text-[11px] text-slate-400">${o.available ? (o.fee_rate * 100).toFixed(1) + '% ของราคาตั๋ว' : ''}</span>
+                        </span>
+                    </button>`;
+            }).join('');
+            const opt = options.find(o => o.hours === selected);
+            confirmBtn.disabled = !opt;
+            confirmBtn.textContent = opt ? `ตรึงราคา ${opt.label} · ${baht(opt.fee_amount)}` : 'ไม่มีระยะที่เลือกได้';
+        }
+        listEl.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-hours]');
+            if (!btn || btn.disabled) return;
+            selected = Number(btn.dataset.hours);
+            renderOptions();
+        });
+        renderOptions();
+
+        function close(result) {
+            if (settled) return;
+            settled = true;
+            document.removeEventListener('keydown', onKeydown);
+            document.body.style.overflow = '';
+            overlay.remove();
+            resolve(result);
+        }
+        function onKeydown(e) { if (e.key === 'Escape') close(null); }
+        document.addEventListener('keydown', onKeydown);
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) close(null); });
+        overlay.querySelector('#fmCancel').addEventListener('click', () => close(null));
+        confirmBtn.addEventListener('click', () => close(selected));
     });
 }
 

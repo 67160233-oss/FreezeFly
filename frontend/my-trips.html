@@ -117,11 +117,19 @@
                     } else if (f.status === 'EXPIRED' || f.status === 'expired') {
                         badgeStyle = 'bg-rose-50 text-rose-700 border-rose-200';
                         statusText = 'หมดอายุแล้ว';
+                    } else if (f.status === 'refunded') {
+                        badgeStyle = 'bg-amber-50 text-amber-700 border-amber-200';
+                        statusText = f.refund_reason === 'price_cap' ? 'ราคาเกินเพดาน · คืนค่าธรรมเนียมแล้ว' : 'ที่นั่งเต็ม · คืนค่าธรรมเนียมแล้ว';
                     }
 
                     const isActive = f.status === 'ACTIVE' || f.status === 'active';
                     const fee = Number(f.freeze_fee || 0);
-                    const remaining = Math.max(0, Number(f.frozen_price || 0) - fee);
+                    const today = f.flight ? Number(f.flight.price) : null;   // ราคาตลาดวันนี้
+                    const diff = today != null ? today - Number(f.frozen_price) : 0;
+                    const todayLine = (isActive && today != null)
+                        ? `<div class="text-xs ${diff > 0 ? 'text-amber-600' : diff < 0 ? 'text-emerald-600' : 'text-slate-400'}">ราคาวันนี้ ${baht(today)} ${diff > 0 ? `▲ ${baht(diff)} (เราคุ้มครองให้สูงสุด ${baht(f.coverage_cap_amount)})` : diff < 0 ? `▼ ${baht(-diff)} (คุณจะได้ราคาใหม่ที่ถูกกว่า)` : '(เท่าเดิม)'}</div>`
+                        : '';
+                    const refundWhy = f.refund_reason === 'price_cap' ? 'ราคาขึ้นเกินเพดานความคุ้มครอง' : 'ที่นั่งเต็มก่อนออกตั๋ว';
                     const flightLabel = f.flight
                         ? `${escapeHtml(f.flight.origin)} ➔ ${escapeHtml(f.flight.destination)} <span class="text-xs font-mono text-slate-400">#${escapeHtml(f.flight.flight_number)}</span>`
                         : `เที่ยวบิน ID: ${Number(f.flight_id)}`;
@@ -139,10 +147,13 @@
                             <div class="text-right w-full md:w-auto border-t md:border-t-0 pt-3 md:pt-0 flex flex-col md:items-end gap-2">
                                 <div class="text-xs text-slate-400">ราคาสิทธิ์ที่ล็อกไว้</div>
                                 <div class="text-2xl font-bold text-emerald-600">${baht(f.frozen_price)}</div>
-                                <div class="text-xs text-slate-400">ชำระค่าตรึงราคาแล้ว ${baht(fee)} · คงเหลือ ${baht(remaining)}</div>
+                                ${todayLine}
+                                <div class="text-xs text-slate-400">${f.status === 'refunded'
+                                    ? `คืนค่าธรรมเนียม ${baht(fee)} เต็มจำนวน (${refundWhy})`
+                                    : `ชำระค่าตรึงราคาแล้ว ${baht(fee)}`}</div>
                                 ${isActive ? `
                                     <button onclick="payAndConvert(${Number(f.id)})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition shadow-xs cursor-pointer">
-                                        💳 ชำระเงินส่วนที่เหลือเพื่อออกตั๋ว
+                                        💳 ดูยอดและออกตั๋ว
                                     </button>
                                 ` : ''}
                             </div>
@@ -176,9 +187,10 @@
                     const flightInfo = b.flight
                         ? `${escapeHtml(b.flight.origin)} ➔ ${escapeHtml(b.flight.destination)} (#${escapeHtml(b.flight.flight_number)})`
                         : `เที่ยวบิน ID: ${Number(b.flight_id)}`;
-                    const feeLine = Number(b.freeze_fee_paid) > 0
-                        ? `<div class="text-xs text-slate-400">ตรึงราคาแล้ว ${baht(b.freeze_fee_paid)} · ชำระเพิ่ม ${baht(b.amount_due)}</div>`
-                        : '';
+                    const feeLine = (Number(b.freeze_fee_paid) > 0
+                        ? `<div class="text-xs text-slate-400">ค่าตรึงราคา ${baht(b.freeze_fee_paid)} · ชำระตอนออกตั๋ว ${baht(b.amount_due)}</div>` : '')
+                        + (Number(b.protection_paid) > 0
+                        ? `<div class="text-xs text-emerald-700">🛡️ ราคาตลาด ${baht(b.market_price)} · FreezeFly จ่ายส่วนต่างให้ ${baht(b.protection_paid)}</div>` : '');
 
                     return `
                     <div class="bg-white p-6 rounded-2xl shadow-xs border border-emerald-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:shadow-md transition relative overflow-hidden">
@@ -216,11 +228,65 @@
                 ? `${freeze.flight.origin} ➔ ${freeze.flight.destination} · เที่ยวบิน #${freeze.flight.flight_number}`
                 : `สิทธิ์ตรึงราคา #${freezeId}`;
 
+            // ราคาตลาดขยับทุกวัน: ขอใบเสนอราคาล่าสุดจากเซิร์ฟเวอร์ก่อนให้ลูกค้ายืนยัน
+            let quote;
+            try {
+                const qRes = await apiFetch(`/freeze/${freezeId}/quote`);
+                if (qRes.status === 401) return;
+                if (!qRes.ok) {
+                    await openMessageModal({ title: 'ออกตั๋วไม่ได้', message: await readError(qRes, 'ไม่สามารถคำนวณยอดได้'), tone: 'error' });
+                    loadUserData();
+                    return;
+                }
+                quote = await qRes.json();
+            } catch (err) {
+                await openMessageModal({ title: 'เชื่อมต่อไม่ได้', message: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', tone: 'error' });
+                return;
+            }
+
+            let acceptExcess = false;
+            if (quote.exceeds_cap) {
+                acceptExcess = await openConfirmModal({
+                    title: 'ราคาขึ้นเกินเพดานความคุ้มครอง',
+                    message: `ราคาตลาดวันนี้ ${baht(quote.market_price)} สูงกว่าราคาที่ล็อก ${baht(quote.frozen_price)} อยู่ ${baht(quote.price_change)}\n`
+                        + `เราจ่ายส่วนต่างให้เต็มเพดาน ${baht(quote.covered)} ส่วนที่เกินอีก ${baht(quote.excess)} ต้องจ่ายเอง\n\n`
+                        + `ถ้าไม่ต้องการจ่ายส่วนเกิน คุณยกเลิกสิทธิ์และรับค่าธรรมเนียม ${baht(quote.fee_paid)} คืนเต็มจำนวนได้`,
+                    confirmLabel: `จ่ายส่วนเกิน ${baht(quote.excess)}`,
+                    cancelLabel: 'ไม่จ่ายส่วนเกิน',
+                });
+                if (!acceptExcess) {
+                    const cancelIt = await openConfirmModal({
+                        title: 'ยกเลิกสิทธิ์และรับเงินคืน?',
+                        message: `ระบบจะคืนค่าธรรมเนียม ${baht(quote.fee_paid)} เต็มจำนวน และยกเลิกสิทธิ์ตรึงราคานี้`,
+                        confirmLabel: 'ยกเลิกและรับเงินคืน',
+                        cancelLabel: 'เก็บสิทธิ์ไว้ก่อน',
+                        tone: 'danger',
+                    });
+                    if (cancelIt) {
+                        const cRes = await apiFetch(`/freeze/${freezeId}/cancel`, { method: 'POST' });
+                        if (cRes.status === 401) return;
+                        await openMessageModal(cRes.ok
+                            ? { title: 'ยกเลิกสิทธิ์แล้ว', message: `คืนค่าธรรมเนียม ${baht(quote.fee_paid)} เต็มจำนวนแล้ว`, tone: 'success' }
+                            : { title: 'เกิดข้อผิดพลาด', message: await readError(cRes, 'ยกเลิกไม่สำเร็จ'), tone: 'error' });
+                        loadUserData();
+                    }
+                    return;
+                }
+            }
+
+            const breakdown = [{ label: `ราคาตลาดวันนี้`, value: baht(quote.market_price) }];
+            if (quote.price_change < 0) breakdown.push({ label: 'ราคาลง คุณได้ราคาใหม่', value: `▼ ${baht(-quote.price_change)}`, tone: 'good' });
+            if (quote.covered > 0) breakdown.push({ label: 'FreezeFly จ่ายส่วนต่างให้', value: `−${baht(quote.covered)}`, tone: 'good' });
+            if (quote.excess > 0) breakdown.push({ label: 'ส่วนที่เกินเพดาน (คุณจ่าย)', value: baht(quote.excess), tone: 'warn' });
+            if (quote.fee_paid > quote.fee_credit) breakdown.push({ label: 'ค่าธรรมเนียมที่ใช้จ่ายส่วนต่างไปแล้ว', value: baht(quote.fee_paid - quote.fee_credit) });
+
             const result = await openBookingModal({
                 title: 'ชำระเงินและออกตั๋ว',
                 flightLabel,
-                basePrice: freeze.frozen_price,
-                feePaid: freeze.freeze_fee,
+                basePrice: quote.ticket_price,
+                feePaid: quote.fee_credit,
+                feeLabel: 'หักค่าธรรมเนียมที่จ่ายไว้',
+                breakdown,
                 flightId: freeze.flight_id,
                 defaultName: localStorage.getItem('username') || '',
                 defaultEmail: localStorage.getItem('userEmail') || '',
@@ -234,7 +300,8 @@
                     body: JSON.stringify({
                         passenger_name: result.passengerName,
                         passenger_email: result.passengerEmail,
-                        promo_code: result.promoCode
+                        promo_code: result.promoCode,
+                        accept_excess: acceptExcess
                     })
                 });
                 if (res.status === 401) return;
@@ -243,7 +310,8 @@
                     const booking = await res.json();
                     await openMessageModal({
                         title: 'ชำระเงินสำเร็จ',
-                        message: `ระบบทำการออกตั๋ว E-Ticket เรียบร้อยแล้ว\nยอดที่ชำระเพิ่ม: ${baht(booking.amount_due)}`,
+                        message: `ระบบทำการออกตั๋ว E-Ticket เรียบร้อยแล้ว\nยอดที่ชำระ: ${baht(booking.amount_due)}`
+                            + (booking.protection_paid > 0 ? `\nFreezeFly จ่ายส่วนต่างราคาให้ ${baht(booking.protection_paid)}` : ''),
                         tone: 'success'
                     });
                     loadUserData();
