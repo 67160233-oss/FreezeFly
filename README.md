@@ -29,6 +29,9 @@ FreezePriceProject/
 │   │   ├── train_price_model.py  # สคริปต์สร้างข้อมูลและสอนโมเดล AI
 │   │   ├── requirements-ml.txt   # ไลบรารีที่ใช้ตอนสอนเท่านั้น (scikit-learn)
 │   │   └── MODEL_CARD.md         # โมเดลทำอะไรได้/ไม่ได้ และผลการทดสอบ
+│   ├── tests/
+│   │   ├── __init__.py
+│   │   └── test_price_protection.py  # ทดสอบกติกาคุ้มครองราคา 50,000 สถานการณ์ + ทดสอบครบวงจร
 │   ├── Dockerfile            # Docker configuration สำหรับ Backend
 │   └── requirements.txt      # Python Dependencies
 ├── frontend/
@@ -163,6 +166,32 @@ cd frontend
 
 ---
 
+## 🧪 การทดสอบ (Testing)
+
+ไฟล์ `backend/tests/test_price_protection.py` ตรวจคำสัญญาของระบบคุ้มครองราคา ไม่ต้องติดตั้งอะไรเพิ่มนอกจาก Python และไม่ต้องเปิดเซิร์ฟเวอร์
+
+```bash
+cd backend
+python -m unittest discover tests -v
+```
+
+ผลที่ถูกต้องคือ 14 ข้อขึ้นว่า `ok` และบรรทัดสุดท้ายเป็น `OK` (ใช้เวลาราว 2–3 วินาที)
+
+| ชุดทดสอบ | ตรวจอะไร |
+|---|---|
+| สุ่ม 50,000 สถานการณ์ราคา | ราคาตลาดตอนออกตั๋วลดลงได้ถึง 40% หรือขึ้นได้ถึง 60% · ค่าธรรมเนียม 3–15% ตรวจทุกกรณีว่าลูกค้าจ่ายรวมไม่เกินราคาตลาด, บริษัทขาดทุนไม่เกินเพดาน 20%, ราคาลงแล้วลูกค้าได้ราคาใหม่ และเงินบวกลบกันลงตัว |
+| ตัวอย่างตัวเลข | ล็อก ฿10,000 ค่าธรรมเนียม ฿700: ราคาเท่าเดิม, ลง, ขึ้นน้อยกว่าค่าธรรมเนียม, ขึ้นเกินค่าธรรมเนียม, ขึ้นพอดีเพดาน และเกินเพดาน |
+| ครบวงจร 2,000 ครั้ง | ใช้ตัวจำลองราคา (`pricing.py`) และค่าธรรมเนียมจาก AI (`price_ai.py`) ตรึงราคา รอ แล้วออกตั๋ว และตรวจว่าสิทธิ์หมดก่อนปิดขายตั๋วเสมอ |
+
+การทดสอบใช้ seed คงที่ ทุกคนที่รันจะได้สถานการณ์ชุดเดียวกันและผลเหมือนกัน
+
+**ถ้าเจอปัญหาบน Windows**
+* `Start directory is not importable: 'tests'` แปลว่าไม่พบโฟลเดอร์ `tests` ให้ตรวจว่ารันคำสั่งในโฟลเดอร์ `backend` และไฟล์อยู่ที่ `backend\tests\test_price_protection.py`
+* `Python was not found; run without arguments to install from the Microsoft Store` แปลว่าคำสั่ง `python` ไปเจอทางลัดของ Microsoft Store ให้ใช้ `py -m unittest discover tests -v` แทน หรือปิด App execution aliases ของ `python.exe` และ `python3.exe` ใน Settings → Apps → Advanced app settings แล้วเปิด PowerShell ใหม่
+* รันไฟล์เดียวโดยตรงได้ด้วย `py tests\test_price_protection.py`
+
+---
+
 ## 🔑 การยืนยันตัวตน (Authentication)
 
 1. เรียก `POST /auth/login` จะได้ `access_token` (JWT)
@@ -205,4 +234,4 @@ cd frontend
 | POST | `/promotions/validate` | ไม่ | ตรวจโค้ด (ส่ง `flight_id` และ token เพิ่มเพื่อให้ตรวจเงื่อนไขได้ครบ) |
 | POST | `/contact` | ไม่ | ส่งข้อความติดต่อ |
 
-**ข้อมูลใน Booking:** `total_price` = ราคาตั๋วทั้งใบหลังหักส่วนลด, `freeze_fee_paid` = ค่าธรรมเนียมตรึงราคาที่จ่ายไปแล้ว, `amount_due` = ยอดที่ต้องชำระเพิ่ม (`total_price - freeze_fee_paid`)
+**ข้อมูลใน Booking:** `market_price` = ราคาตลาดของสายการบินตอนออกตั๋ว, `total_price` = ราคาตั๋วที่ลูกค้าจ่ายหลังหักส่วนลด (ก่อนหักค่าธรรมเนียม), `protection_paid` = ส่วนต่างราคาที่ FreezeFly จ่ายแทนลูกค้า, `freeze_fee_paid` = ค่าธรรมเนียมตรึงราคาที่จ่ายไปแล้ว, `fee_credit` = ส่วนของค่าธรรมเนียมที่ไม่ได้ใช้จ่ายส่วนต่าง จึงหักเป็นค่าตั๋ว, `amount_due` = ยอดที่ชำระตอนออกตั๋ว (`total_price - fee_credit`)
